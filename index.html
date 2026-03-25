@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ITS Turismo Liguria — Trova il tuo percorso</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap');
+  :root{
+    --bg:#07111F;--surface:#0D1F35;--surface2:#152D47;
+    --border:#1C3A58;--text:#E2EDF5;--muted:#5E8BAA;--muted2:#1C3A58;
+    --accent:#00D4AA;--accent2:#FF7B54;--gold:#FFD166;--white:#FFFFFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+  .app{max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh}
+  .screen{display:none}.screen.active{display:flex;flex-direction:column;min-height:100vh}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.5px;color:var(--accent);line-height:1.2}
+  .logo span{display:block;font-size:10px;font-weight:400;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .step-counter{font-size:12px;color:var(--muted)}
+
+  /* PROGRESS */
+  .prog-bar{height:2px;background:var(--border);margin:16px 20px 0}
+  .prog-fill{height:100%;background:var(--accent);transition:width .4s ease}
+
+  /* WELCOME */
+  .welcome-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 24px}
+  .welcome-kicker{font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+  .welcome-title{font-family:'Syne',sans-serif;font-size:clamp(26px,6vw,34px);font-weight:800;line-height:1.15;margin-bottom:16px;color:var(--white)}
+  .welcome-title em{color:var(--accent);font-style:normal}
+  .welcome-sub{font-size:14px;line-height:1.75;color:var(--muted);margin-bottom:32px}
+  .paths-preview{display:flex;flex-direction:column;gap:8px;margin-bottom:32px}
+  .path-chip{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .path-chip-icon{font-size:20px;min-width:24px}
+  .path-chip-text{font-size:13px;color:var(--text);line-height:1.4}
+  .path-chip-text strong{display:block;font-weight:600;color:var(--white);font-size:13px}
+  .meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+  .meta-pill{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 11px;border-radius:20px}
+
+  /* QUESTION */
+  .q-body{flex:1;padding:24px 20px 16px;display:flex;flex-direction:column}
+  .q-tag{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:11px}
+  .q-text{font-family:'Syne',sans-serif;font-size:clamp(16px,4.2vw,20px);font-weight:600;line-height:1.35;margin-bottom:7px;color:var(--white)}
+  .q-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opt{display:flex;align-items:center;gap:13px;padding:13px 15px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;text-align:left;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);width:100%;line-height:1.4;-webkit-user-select:none;user-select:none;transition:border-color .12s,background .12s}
+  .opt.sel{border-color:var(--accent)!important;background:rgba(0,212,170,0.08)!important;color:var(--white)}
+  .opt.msel{border-color:var(--gold)!important;background:rgba(255,209,102,0.07)!important;color:var(--white)}
+  .opt-icon{font-size:19px;min-width:25px;text-align:center;pointer-events:none}
+  .opt-txt{flex:1;pointer-events:none}
+  .opt-check{width:19px;height:19px;min-width:19px;border:1.5px solid var(--muted2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--bg);pointer-events:none}
+  .opt.msel .opt-check{background:var(--gold);border-color:var(--gold)}
+  .multi-label{font-size:11px;color:var(--muted);margin-bottom:9px;text-align:right}
+
+  /* SLIDER */
+  .slider-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:14px}
+  input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;background:var(--accent);border-radius:50%;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:28px;height:28px;background:var(--accent);border-radius:50%;cursor:pointer;border:none}
+  .slider-readout{text-align:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--accent);margin-top:13px;min-height:20px}
+
+  /* BOTTOM */
+  .bottom-bar{padding:10px 20px 28px;display:flex;flex-direction:column;gap:6px}
+  .warn{font-size:12px;color:var(--accent2);min-height:16px;text-align:right}
+  .btns{display:flex;gap:10px}
+  .btn{padding:15px 0;border-radius:12px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;letter-spacing:0.5px}
+  .btn:active{opacity:.75}
+  .btn-main{background:var(--accent);color:var(--bg);flex:1}
+  .btn-back{background:var(--surface2);color:var(--muted);border:1px solid var(--border);padding:15px 22px;flex:0 0 auto}
+  .btn-full{width:100%;border-radius:12px}
+
+  /* RESULT */
+  .result-body{flex:1;padding:24px 20px 0}
+
+  .result-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);border-radius:20px;padding:6px 14px;margin-bottom:14px}
+  .result-badge-dot{width:7px;height:7px;background:var(--accent);border-radius:50%}
+  .result-badge-text{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+
+  .result-name{font-family:'Syne',sans-serif;font-size:clamp(20px,5vw,28px);font-weight:800;line-height:1.2;color:var(--white);margin-bottom:12px}
+  .result-why{font-size:14px;line-height:1.75;color:#9BBDD4;margin-bottom:4px}
+
+  .section-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:26px 0 11px}
+
+  /* MATERIE */
+  .materie-grid{display:flex;flex-direction:column;gap:8px}
+  .materia-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px}
+  .materia-icon{font-size:18px;min-width:22px;margin-top:1px}
+  .materia-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px}
+  .materia-desc{font-size:12px;color:var(--muted);line-height:1.5}
+
+  /* SBOCCHI */
+  .sbocchi-wrap{display:flex;flex-wrap:wrap;gap:7px}
+  .sbocco-pill{background:rgba(255,123,84,0.1);border:1px solid rgba(255,123,84,0.2);color:var(--accent2);font-size:12px;padding:6px 12px;border-radius:20px;font-weight:500}
+
+  /* SECONDO PERCORSO */
+  .second-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin:8px 0}
+  .second-badge{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .second-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:8px}
+  .second-diff{font-size:13px;color:var(--muted);line-height:1.6}
+
+  /* ACTION */
+  .action-box{background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.18);border-radius:14px;padding:18px;margin:24px 0}
+  .action-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+  .action-text{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--white);line-height:1.5}
+
+  /* FEAR */
+  .fear-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin:8px 0}
+  .fear-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white);margin-bottom:5px}
+  .fear-sub{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;font-style:italic}
+  .fear-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:13px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);resize:none;min-height:90px;outline:none;line-height:1.6}
+  .fear-input:focus{border-color:var(--accent)}
+  .fear-input::placeholder{color:var(--muted2)}
+  .fear-btn{width:100%;margin-top:11px;padding:13px;border-radius:10px;background:var(--accent);color:var(--bg);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none}
+  .fear-btn:active{opacity:.75}
+  .advice-box{background:linear-gradient(135deg,rgba(0,212,170,0.05),rgba(255,209,102,0.05));border:1px solid rgba(0,212,170,0.2);border-radius:12px;padding:18px;margin-top:12px;display:none}
+  .advice-emoji{font-size:26px;margin-bottom:9px;display:block}
+  .advice-text{font-size:13px;line-height:1.8;color:#9BBDD4}
+
+  .restart-btn{display:block;width:100%;margin:24px 0 40px;padding:14px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- WELCOME -->
+<div class="screen active" id="s-welcome">
+  <div class="topbar">
+    <div class="logo">ITS Turismo Liguria<span>Trova il tuo percorso</span></div>
+  </div>
+  <div class="welcome-body">
+    <div class="welcome-kicker">Orientamento</div>
+    <div class="welcome-title">Quale percorso<br>fa per <em>te</em>?</div>
+    <div class="welcome-sub">8 domande su come lavori davvero. Alla fine scopri quale dei nostri percorsi si adatta meglio a te — e perché.</div>
+
+    <div class="paths-preview">
+      <div class="path-chip"><span class="path-chip-icon">🏨</span><div class="path-chip-text"><strong>Gestione Strutture Ricettive</strong>Coordinare, analizzare, far crescere una struttura</div></div>
+      <div class="path-chip"><span class="path-chip-icon">🍽</span><div class="path-chip-text"><strong>Food & Beverage Manager</strong>Cibo, qualità, territorio, organizzazione</div></div>
+      <div class="path-chip"><span class="path-chip-icon">🎪</span><div class="path-chip-text"><strong>Manager di Eventi Turistici</strong>Progettare, coordinare, promuovere eventi</div></div>
+    </div>
+
+    <div class="meta-row">
+      <div class="meta-pill">⏱ 4 minuti</div>
+      <div class="meta-pill">⚡ Funziona offline</div>
+      <div class="meta-pill">📵 Nessun dato salvato</div>
+    </div>
+    <button class="btn btn-main btn-full" id="btn-start">Inizia →</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="s-quiz">
+  <div class="topbar">
+    <div class="logo">ITS Turismo Liguria<span>Orientamento percorsi</span></div>
+    <div class="step-counter" id="step-counter">1 / 8</div>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="q-body" id="q-body"></div>
+  <div class="bottom-bar">
+    <div class="warn" id="warn"></div>
+    <div class="btns">
+      <button class="btn btn-back" id="btn-prev">←</button>
+      <button class="btn btn-main" id="btn-next">Avanti →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="s-result">
+  <div class="topbar"><div class="logo">ITS Turismo Liguria<span>Il tuo risultato</span></div></div>
+  <div class="result-body" id="result-body"></div>
+</div>
+
+</div>
+<script>
+var QS=[
+  {
+    id:'scenario',type:'single',
+    tag:'Iniziamo da qui',
+    text:'Quale scenario ti attira di più?',
+    sub:'Istinto — non pensarci troppo.',
+    opts:[
+      {e:'🏨',t:'Gestire un hotel: coordinare i reparti, tenere alto il livello, far crescere il business'},
+      {e:'🍝',t:'Costruire un menu con prodotti liguri: scegliere i fornitori, progettare l\'offerta, curare la qualità'},
+      {e:'🎉',t:'Organizzare un festival sul territorio: logistica, comunicazione, sponsor, persone'},
+      {e:'📊',t:'Analizzare i dati di una struttura e ottimizzare prezzi, offerta e strategie di vendita'}
+    ]
+  },
+  {
+    id:'ruolo',type:'single',
+    tag:'Come ti muovi nel gruppo',
+    text:'In un progetto di gruppo, che ruolo prendi spontaneamente?',
+    sub:'Non quello che dovresti prendere. Quello che prendi davvero.',
+    opts:[
+      {e:'🧭',t:'Coordino, divido i compiti, tengo tutto sotto controllo'},
+      {e:'🔍',t:'Mi occupo dei dettagli pratici — qualità, materiali, procedura'},
+      {e:'📣',t:'Curo la comunicazione e la promozione — voglio che si sappia'},
+      {e:'💡',t:'Propongo idee creative e nuovi modi di fare le cose'}
+    ]
+  },
+  {
+    id:'stufa',type:'single',
+    tag:'Cosa ti pesa',
+    text:'Cosa ti stufa più velocemente sul lavoro?',
+    sub:'Quello che odi fare ti dice qualcosa su dove non dovresti stare.',
+    opts:[
+      {e:'📋',t:'Seguire procedure rigide senza mai poter cambiare nulla'},
+      {e:'🖥',t:'Stare tutto il giorno davanti a tabelle, numeri e report'},
+      {e:'🔄',t:'Fare sempre le stesse cose, nello stesso posto, ogni giorno'},
+      {e:'🗣',t:'Gestire continuamente conflitti e problemi tra le persone'}
+    ]
+  },
+  {
+    id:'liguria',type:'single',
+    tag:'Il territorio',
+    text:'Cosa ti affascina di più della Liguria come destinazione turistica?',
+    sub:'Non quello che "dovresti" rispondere — quello che senti davvero.',
+    opts:[
+      {e:'🫒',t:'Il cibo, il vino, i prodotti tipici — il pesto, il focaccia, il Pigato'},
+      {e:'🎭',t:'La cultura, i borghi, le tradizioni — storie da raccontare'},
+      {e:'🏖',t:'Le strutture ricettive, i resort, l\'ospitalità di qualità'},
+      {e:'🎶',t:'Gli eventi, i festival, la vita culturale che anima il territorio'}
+    ]
+  },
+  {
+    id:'competenze',type:'multi',max:2,
+    tag:'Cosa vuoi imparare',
+    text:'Quali competenze vuoi sviluppare nei prossimi due anni?',
+    sub:'Scegli 2 — quelle che senti più tue, non quelle che sembrano "giuste".',
+    opts:[
+      {e:'📈',t:'Revenue management, analisi dei dati, strategie di pricing'},
+      {e:'🍷',t:'Prodotti del territorio, vino, cucina ligure, gestione acquisti'},
+      {e:'📱',t:'Marketing digitale, social media, comunicazione e promozione'},
+      {e:'🎯',t:'Organizzazione eventi, logistica, coordinamento fornitori'},
+      {e:'👥',t:'Gestione del personale, leadership, organizzazione dei reparti'},
+      {e:'🌿',t:'Sostenibilità, territorio, filiera locale, riduzione sprechi'}
+    ]
+  },
+  {
+    id:'impatto',type:'single',
+    tag:'Che risultato vuoi',
+    text:'Alla fine del lavoro, cosa vuoi aver lasciato?',
+    sub:'Una sola risposta — quella che senti più vera.',
+    opts:[
+      {e:'⚙️',t:'Una struttura che funziona meglio, con più clienti e più ricavi'},
+      {e:'🌱',t:'Un\'offerta di qualità che valorizza il territorio e i suoi prodotti'},
+      {e:'✨',t:'Un evento che le persone ricorderanno e di cui parleranno'},
+      {e:'🤝',t:'Un team che lavora bene, motivato, con ruoli chiari'}
+    ]
+  },
+  {
+    id:'apprendimento',type:'single',
+    tag:'Come impari',
+    text:'Come preferisci imparare qualcosa di nuovo?',
+    sub:'',
+    opts:[
+      {e:'💥',t:'Buttandomi direttamente — sbaglio, imparo, vado avanti'},
+      {e:'📖',t:'Capendo prima la teoria, poi la applico con metodo'},
+      {e:'👀',t:'Osservando chi lo fa bene, poi lo replico a modo mio'},
+      {e:'🛠',t:'Lavorando su un progetto reale — imparo facendo, non studiando'}
+    ]
+  },
+  {
+    id:'operativo',type:'slider',
+    tag:'Operativo o strategico?',
+    text:'Dove ti senti più a tuo agio?',
+    sub:'Non c\'è risposta giusta — è una questione di stile.',
+    labelLeft:'Operativo — faccio, eseguo, costruisco',
+    labelRight:'Strategico — analizzo, decido, coordino'
+  }
+];
+
+var cur=0,ans={};
+
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById(id).classList.add('active')}
+
+function sliderLabel(v){v=parseInt(v);if(v<20)return'Molto operativo/a';if(v<40)return'Più operativo/a';if(v<60)return'Equilibrio';if(v<80)return'Più strategico/a';return'Molto strategico/a'}
+
+function updateTrack(el){var p=((el.value-el.min)/(el.max-el.min))*100;el.style.background='linear-gradient(90deg,var(--accent) '+p+'%,var(--border) '+p+'%)'}
+
+function render(){
+  var q=QS[cur],total=QS.length;
+  document.getElementById('step-counter').textContent=(cur+1)+' / '+total;
+  document.getElementById('prog-fill').style.width=Math.round((cur/total)*100)+'%';
+  document.getElementById('btn-prev').style.visibility=cur===0?'hidden':'visible';
+  document.getElementById('warn').textContent='';
+  var inner='';
+  if(q.type==='single'){
+    var sel=(ans[q.id]!==undefined)?ans[q.id]:-1;
+    inner='<div class="opts">';
+    q.opts.forEach(function(o,i){inner+='<div class="opt'+(sel===i?' sel':'')+'" data-type="single" data-i="'+i+'"><span class="opt-icon">'+o.e+'</span><span class="opt-txt">'+o.t+'</span></div>'});
+    inner+='</div>';
+  } else if(q.type==='multi'){
+    var selM=ans[q.id]||[];
+    inner='<div class="multi-label">Seleziona '+q.max+'</div><div class="opts">';
+    q.opts.forEach(function(o,i){var on=selM.indexOf(i)>-1;inner+='<div class="opt'+(on?' msel':'')+'" data-type="multi" data-i="'+i+'"><span class="opt-icon">'+o.e+'</span><span class="opt-txt">'+o.t+'</span><span class="opt-check">'+(on?'✓':'')+'</span></div>'});
+    inner+='</div>';
+  } else if(q.type==='slider'){
+    var val=(ans[q.id]!==undefined)?ans[q.id]:50;
+    if(ans[q.id]===undefined)ans[q.id]=50;
+    inner='<div class="slider-ends"><span>'+q.labelLeft+'</span><span>'+q.labelRight+'</span></div><input type="range" id="rng" min="0" max="100" value="'+val+'"><div class="slider-readout" id="sval">'+sliderLabel(val)+'</div>';
+  }
+  document.getElementById('q-body').innerHTML='<div class="q-tag">'+q.tag+'</div><div class="q-text">'+q.text+'</div>'+(q.sub?'<div class="q-sub">'+q.sub+'</div>':'')+inner;
+  if(q.type==='slider'){var rng=document.getElementById('rng');updateTrack(rng);rng.addEventListener('input',function(){ans[q.id]=parseInt(this.value);document.getElementById('sval').textContent=sliderLabel(this.value);updateTrack(this)})}
+}
+
+document.getElementById('q-body').addEventListener('click',function(e){
+  var opt=e.target.closest('.opt');
+  if(!opt)return;
+  var q=QS[cur],i=parseInt(opt.getAttribute('data-i')),type=opt.getAttribute('data-type');
+  document.getElementById('warn').textContent='';
+  if(type==='single'){
+    ans[q.id]=i;
+    document.querySelectorAll('#q-body .opt').forEach(function(b){b.classList.remove('sel')});
+    opt.classList.add('sel');
+  } else if(type==='multi'){
+    if(!ans[q.id])ans[q.id]=[];
+    var arr=ans[q.id],pos=arr.indexOf(i);
+    if(pos>-1){arr.splice(pos,1);opt.classList.remove('msel');opt.querySelector('.opt-check').textContent=''}
+    else{if(arr.length>=q.max){document.getElementById('warn').textContent='Scegline solo '+q.max+'.';return}arr.push(i);opt.classList.add('msel');opt.querySelector('.opt-check').textContent='✓'}
+  }
+});
+
+function isOk(){var q=QS[cur],a=ans[q.id];if(q.type==='single')return a!==undefined&&a>=0;if(q.type==='multi')return Array.isArray(a)&&a.length>0;if(q.type==='slider')return true;return false}
+
+document.getElementById('btn-start').addEventListener('click',function(){show('s-quiz');render()});
+document.getElementById('btn-next').addEventListener('click',function(){
+  if(!isOk()){document.getElementById('warn').textContent='Scegli una risposta per continuare.';return}
+  if(cur<QS.length-1){cur++;render()}else{showResult(buildProfile())}
+});
+document.getElementById('btn-prev').addEventListener('click',function(){if(cur>0){cur--;render()}});
+
+// ── SCORING ──────────────────────────────────────────────────────────────────
+function buildProfile(){
+  var score={gestione:0,fb:0,eventi:0};
+  var sc=ans['scenario'],ruolo=ans['ruolo'],stufa=ans['stufa'],
+      liguria=ans['liguria'],comp=ans['competenze']||[],
+      impatto=ans['impatto'],appr=ans['apprendimento'],op=ans['operativo']||50;
+
+  // scenario
+  if(sc===0)score.gestione+=4;
+  else if(sc===1)score.fb+=4;
+  else if(sc===2)score.eventi+=4;
+  else if(sc===3)score.gestione+=3;
+
+  // ruolo
+  if(ruolo===0){score.gestione+=3;score.eventi+=1}
+  else if(ruolo===1){score.fb+=3;score.gestione+=1}
+  else if(ruolo===2){score.eventi+=3;score.fb+=1}
+  else if(ruolo===3)score.eventi+=2;
+
+  // stufa (inverso — indica cosa non gli piace)
+  if(stufa===0){score.eventi+=2;score.fb+=1}    // odia procedure rigide → non gestione classica
+  if(stufa===1){score.fb+=2;score.eventi+=2}    // odia numeri/report → più operativo
+  if(stufa===2){score.gestione+=2;score.fb+=1}  // odia routine → non vuole solo esecuzione
+  if(stufa===3)score.fb+=1;                     // odia conflitti → preferisce prodotto
+
+  // liguria
+  if(liguria===0)score.fb+=3;
+  else if(liguria===1)score.eventi+=2;
+  else if(liguria===2)score.gestione+=3;
+  else if(liguria===3)score.eventi+=3;
+
+  // competenze
+  comp.forEach(function(c){
+    if(c===0)score.gestione+=3;
+    else if(c===1)score.fb+=3;
+    else if(c===2){score.eventi+=2;score.gestione+=1}
+    else if(c===3)score.eventi+=3;
+    else if(c===4)score.gestione+=2;
+    else if(c===5)score.fb+=2;
+  });
+
+  // impatto
+  if(impatto===0)score.gestione+=2;
+  else if(impatto===1)score.fb+=2;
+  else if(impatto===2)score.eventi+=2;
+  else if(impatto===3)score.gestione+=1;
+
+  // apprendimento
+  if(appr===0){score.eventi+=2;score.fb+=1}
+  else if(appr===1)score.gestione+=2;
+  else if(appr===2)score.fb+=2;
+  else if(appr===3){score.eventi+=1;score.fb+=2}
+
+  // slider operativo/strategico
+  if(op<35){score.fb+=2;score.eventi+=1}
+  else if(op>=65)score.gestione+=2;
+
+  var sorted=Object.keys(score).sort(function(a,b){return score[b]-score[a]});
+  return {first:sorted[0],second:sorted[1],scores:score};
+}
+
+// ── DATI PERCORSI ─────────────────────────────────────────────────────────────
+var PERCORSI={
+  gestione:{
+    nome:'Esperto di Gestione delle Strutture Ricettive',
+    icona:'🏨',
+    colore:'var(--accent)',
+    sintesi:function(a){
+      var op=a.scores.gestione;
+      var s='Hai una mente da manager — non ti basta eseguire, vuoi capire come funziona il sistema e farlo crescere. ';
+      s+='Ti interessa l\'insieme: come si coordinano i reparti, come si costruisce una strategia, come si migliorano i numeri. ';
+      s+='Questo percorso ti darà gli strumenti per diventare la figura che fa girare una struttura ricettiva — non solo davanti all\'ospite, ma dietro.';
+      return s;
+    },
+    materie:[
+      {i:'📊',n:'Revenue Management',d:'Come si costruisce un budget, si ottimizzano i prezzi e si leggono i dati di mercato per prendere decisioni.'},
+      {i:'📣',n:'Marketing e Web Marketing',d:'Promozione digitale, social, AI applicata al turismo — strumenti concreti per portare ospiti.'},
+      {i:'👥',n:'Gestione del Personale',d:'Leadership, organizzazione dei turni, recruiting, contratti — come si costruisce e si guida un team.'},
+      {i:'🤝',n:'Customer Experience',d:'Fidelizzazione, gestione delle recensioni, comunicazione con l\'ospite prima, durante e dopo il soggiorno.'},
+      {i:'🏛',n:'Gestione Amministrativa e Contabile',d:'Budget, report, gestione dei costi, rapporti con banche e fornitori — la parte economica della struttura.'}
+    ],
+    sbocchi:['Hotel Manager','Front Office Manager','Revenue Manager','Responsabile Marketing Alberghiero','Destination Manager','Responsabile Qualità e Accoglienza','Consulente Hospitality','General Manager di struttura']
+  },
+  fb:{
+    nome:'Food & Beverage Manager',
+    icona:'🍽',
+    colore:'var(--gold)',
+    sintesi:function(a){
+      var s='Sei una persona concreta, con occhio per la qualità e passione per il prodotto. ';
+      s+='Non ti basta che il cibo sia buono — vuoi capire da dove viene, come si gestisce l\'offerta, come si costruisce un\'esperienza gastronomica che abbia senso. ';
+      s+='Questo percorso mette insieme la parte pratica (cucina, sala, vino) con quella gestionale (costi, acquisti, organizzazione) — e ti porta dentro la realtà del territorio ligure.';
+      return s;
+    },
+    materie:[
+      {i:'🫒',n:'Prodotti Tipici e Territorio Ligure',d:'Conoscere i produttori locali, la filiera, le specificità gastronomiche della Liguria — con visite dirette.'},
+      {i:'🍷',n:'Sommellerie e Cultura del Vino',d:'Storia del vino, viticoltura, enologia, servizio — con focus sulle realtà enologiche del territorio.'},
+      {i:'📋',n:'Progettazione Menu e Food Cost',d:'Come si costruisce un menu equilibrato, si gestiscono gli acquisti, si calcola il costo e si riducono gli sprechi.'},
+      {i:'🌿',n:'Sostenibilità e Cucina Inclusiva',d:'Cucina vegana, vegetariana, intolleranze, multiculturalità — l\'offerta moderna deve saper rispondere a tutti.'},
+      {i:'📈',n:'Gestione e Marketing della Ristorazione',d:'Business plan, analisi dei competitor, social media, strategie di vendita — la parte imprenditoriale del settore.'}
+    ],
+    sbocchi:['Food & Beverage Manager','Responsabile di Sala','Sommelier','Bar Manager','Responsabile Acquisti Ristorazione','Catering Manager','Chef Manager','Consulente Gastronomico di Territorio']
+  },
+  eventi:{
+    nome:'Manager di Eventi Turistici e Culturali',
+    icona:'🎪',
+    colore:'var(--accent2)',
+    sintesi:function(a){
+      var s='Hai una mente dinamica — ami costruire cose che prendono forma davvero, con persone, luoghi, scadenze reali. ';
+      s+='Non ti spaventa la complessità: anzi, ti dà energia dover tenere insieme logistica, comunicazione, fornitori e pubblico nello stesso progetto. ';
+      s+='Questo percorso ti prepara a gestire l\'intero ciclo di vita di un evento — dalla prima idea alla valutazione finale — in ambito turistico, culturale e sportivo.';
+      return s;
+    },
+    materie:[
+      {i:'🗂',n:'Progettazione e Pianificazione Eventi',d:'Dalla definizione degli obiettivi al piano operativo, budget, step di avanzamento e gestione delle risorse.'},
+      {i:'📱',n:'Comunicazione e Promozione Digitale',d:'Marketing dell\'evento, gestione sponsor, social media, community online, video e photo making.'},
+      {i:'🔧',n:'Coordinamento Tecnico e Logistico',d:'Fornitori, allestimenti, catering, trasporti, autorizzazioni — tutto quello che rende possibile l\'evento.'},
+      {i:'🌍',n:'Multiculturalità e Turismo Internazionale',d:'Lavorare con target diversi — clientela orientale, araba, americana — e costruire offerte su misura.'},
+      {i:'📊',n:'KPI, Sostenibilità e Valutazione',d:'Come misurare il successo di un evento, il suo impatto sul territorio e garantirne la sostenibilità.'}
+    ],
+    sbocchi:['Event Manager','Destination Event Planner','Coordinatore Festival e Manifestazioni','Wedding Planner','Sports Event Manager','Responsabile Comunicazione Turistica','DMO Manager','Promoter Culturale']
+  }
+};
+
+// Differenze tra percorsi per il secondo suggerimento
+var DIFF={
+  'gestione-fb':'Se ti attira di più la parte di prodotto, qualità gastronomica e territorio rispetto alla gestione complessiva della struttura, il percorso F&B potrebbe essere altrettanto adatto — con meno focus sui numeri e più sul prodotto.',
+  'gestione-eventi':'Se ti senti più creativo/a e ti piace lavorare su progetti che cambiano ogni volta, il percorso eventi valorizza maggiormente la capacità organizzativa in contesti dinamici e meno strutturati di un hotel.',
+  'fb-gestione':'Se ti interessa anche la visione d\'insieme — non solo la qualità del prodotto ma la gestione strategica della struttura, i numeri, il personale — il percorso Gestione amplia molto le prospettive.',
+  'fb-eventi':'Se ti piace l\'idea di lavorare su progetti diversi, fuori da una struttura fissa, con forte componente comunicativa e territoriale, il percorso eventi potrebbe sorprenderti.',
+  'eventi-gestione':'Se ti interessa avere una base più solida nella gestione di strutture ricettive — con strumenti di analisi, revenue e marketing più strutturati — il percorso Gestione offre una carriera più verticale.',
+  'eventi-fb':'Se sei appassionato/a di cibo, prodotti liguri e ospitalità gastronomica, il percorso F&B unisce creatività pratica e gestione in un contesto molto legato al territorio.'
+};
+
+// ── MOSTRA RISULTATO ──────────────────────────────────────────────────────────
+function showResult(res){
+  var p1=PERCORSI[res.first];
+  var p2=PERCORSI[res.second];
+  var diffKey=res.first+'-'+res.second;
+  var diff=DIFF[diffKey]||'Entrambi i percorsi condividono una filosofia formativa concreta e orientata al lavoro — la differenza è soprattutto nel tipo di contesto e di competenze su cui vuoi puntare.';
+
+  var materieHtml=p1.materie.map(function(m){
+    return'<div class="materia-card"><span class="materia-icon">'+m.i+'</span><div><div class="materia-name">'+m.n+'</div><div class="materia-desc">'+m.d+'</div></div></div>';
+  }).join('');
+
+  var sbocchiHtml=p1.sbocchi.map(function(s){return'<span class="sbocco-pill">'+s+'</span>'}).join('');
+
+  document.getElementById('result-body').innerHTML=
+    '<div class="result-badge"><div class="result-badge-dot"></div><div class="result-badge-text">Il tuo percorso</div></div>'+
+    '<div class="result-name">'+p1.icona+' '+p1.nome+'</div>'+
+    '<div class="result-why">'+p1.sintesi(res)+'</div>'+
+
+    '<div class="section-title">Le materie chiave che troverai</div>'+
+    '<div class="materie-grid">'+materieHtml+'</div>'+
+
+    '<div class="section-title">Cosa puoi fare dopo</div>'+
+    '<div class="sbocchi-wrap">'+sbocchiHtml+'</div>'+
+
+    '<div class="section-title">Vale la pena considerare anche...</div>'+
+    '<div class="second-card">'+
+      '<div class="second-badge">Secondo percorso</div>'+
+      '<div class="second-name">'+p2.icona+' '+p2.nome+'</div>'+
+      '<div class="second-diff">'+diff+'</div>'+
+    '</div>'+
+
+    '<div class="action-box">'+
+      '<div class="action-label">⚡ Prossimo passo</div>'+
+      '<div class="action-text">Vieni a un open day ITS Turismo Liguria — puoi incontrare docenti e studenti e capire dall\'interno se questo percorso fa per te.</div>'+
+    '</div>'+
+
+    '<div class="fear-box">'+
+      '<div class="fear-title">💬 Una domanda per te</div>'+
+      '<div class="fear-sub">Nessuno la leggerà. È solo per te.</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic">Qual è la tua più grande paura riguardo al futuro?</div>'+
+      '<textarea class="fear-input" id="fear-input" placeholder="Scrivi qui..."></textarea>'+
+      '<button class="fear-btn" id="fear-btn">Ricevi un consiglio →</button>'+
+      '<div class="advice-box" id="advice-box">'+
+        '<span class="advice-emoji" id="advice-emoji"></span>'+
+        '<div class="advice-text" id="advice-text"></div>'+
+      '</div>'+
+    '</div>'+
+
+    '<button class="restart-btn" id="btn-restart">↩ Ricomincia</button>'+
+    '<div style="height:40px"></div>';
+
+  show('s-result');
+
+  document.getElementById('fear-btn').addEventListener('click',function(){
+    var txt=document.getElementById('fear-input').value.trim();
+    if(txt.length<3){document.getElementById('fear-input').style.borderColor='var(--accent2)';return}
+    var adv=getAdvice(txt);
+    document.getElementById('advice-emoji').textContent=adv.emoji;
+    document.getElementById('advice-text').textContent=adv.msg;
+    document.getElementById('advice-box').style.display='block';
+    document.getElementById('fear-btn').style.display='none';
+    document.getElementById('advice-box').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+
+  document.getElementById('btn-restart').addEventListener('click',function(){cur=0;ans={};show('s-welcome')});
+}
+
+// ── CONSIGLIO PAURA ───────────────────────────────────────────────────────────
+function getAdvice(text){
+  text=text.toLowerCase();
+  var advices=[
+    {keys:['sbagliare','errore','errori','fallire','fallimento'],emoji:'🌱',
+     msg:'La paura di sbagliare è la più comune — e la più inutile. Non perché sbagliare non faccia male, ma perché chi non sbaglia non sta facendo niente di interessante. I percorsi ITS sono costruiti esattamente su questo: imparare facendo, con lo stage in azienda, con i project work reali. L\'errore non è il contrario del successo — è parte del percorso.'},
+    {keys:['lavoro','non trovare','occupazione','impiego','posto fisso'],emoji:'🔦',
+     msg:'Il turismo è uno dei settori con più domanda di figure qualificate — soprattutto in Liguria, dove l\'offerta cresce e mancano professionisti con formazione reale. Un percorso ITS non è teoria: è 800 ore di stage in azienda, con referenti del settore. Molti studenti vengono assunti dalle stesse aziende dove hanno fatto lo stage.'},
+    {keys:['soldi','guadagnare','economica','stipendio','povero','denaro'],emoji:'⚖️',
+     msg:'Preoccuparsi della stabilità economica è sensato, non è una debolezza. Nel turismo, le figure con competenze gestionali reali — non solo operative — guadagnano significativamente di più. L\'obiettivo di questo percorso è formarti come tecnico specializzato, non come stagionale. È una differenza che si sente anche in busta paga.'},
+    {keys:['scelta','scegliere','sbaglio','rimpianto','pentirmi','percorso sbagliato'],emoji:'🧭',
+     msg:'Nessuna scelta è così definitiva come sembra adesso. Un percorso ITS dura due anni — non è una scelta per la vita, è un passo concreto verso una direzione. E anche se dovessi cambiare strada dopo, le competenze che costruisci qui — organizzazione, gestione, comunicazione, territorio — ti tornano utili ovunque.'},
+    {keys:['futuro','incerto','incertezza','non so','confuso','confusa','perso','persa','non capisco'],emoji:'🌫️',
+     msg:'Non sapere è la condizione normale a questa età — davvero, non è un problema tuo. La cosa utile da fare non è aspettare di avere le idee chiarissime: è fare il passo più vicino a quello che senti. Questo test ti ha dato un\'indicazione — non una certezza, ma una direzione su cui vale la pena approfondire.'},
+    {keys:['deludere','genitori','famiglia','aspettative'],emoji:'💛',
+     msg:'Chi ti vuole bene vuole che tu stia bene — anche se questo significa una strada diversa da quella che si aspettava. Un percorso ITS non è "meno" di un\'università: è una formazione diversa, più concreta, con sbocchi lavorativi misurabili. Vale la pena parlarne a casa con dati alla mano, non solo con emozioni.'},
+    {keys:['capace','non ce la','non sono','incapace','stupido','stupida','non riesco'],emoji:'🔥',
+     msg:'Quello che senti quando pensi "non ce la faccio" è quasi sempre la distanza tra dove sei adesso e dove vuoi arrivare — non una valutazione accurata di quello che puoi fare. Il percorso ITS è costruito per portarti da dove sei a dove puoi arrivare, passo dopo passo, con persone che lo fanno con te.'}
+  ];
+  for(var i=0;i<advices.length;i++){
+    var a=advices[i];
+    for(var j=0;j<a.keys.length;j++){if(text.indexOf(a.keys[j])>-1)return{emoji:a.emoji,msg:a.msg}}
+  }
+  return{emoji:'✨',msg:'Quello che hai scritto è reale — e il fatto che tu ci abbia pensato vuol dire che stai già facendo il lavoro giusto. Non devi risolvere tutto adesso: devi solo fare il passo più vicino. Hai un profilo chiaro, hai un percorso consigliato — il resto si capisce andando, non aspettando.'};
+}
+</script>
+</body>
+</html>
